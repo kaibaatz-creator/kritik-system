@@ -3,13 +3,12 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Mitglieder</title>
 
 <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
 <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-database.js"></script>
 
 <style>
-body{background:#000;color:white;font-family:Arial, sans-serif;text-align:center;margin:0;}
+body{background:#000;color:white;font-family:Arial;text-align:center;margin:0;}
 .logo{height:150px;margin:20px auto;display:block;}
 
 .msg{
@@ -18,6 +17,7 @@ body{background:#000;color:white;font-family:Arial, sans-serif;text-align:center
   padding:14px;
   border-radius:14px;
   text-align:left;
+
   width:92%;
   max-width:700px;
 }
@@ -42,9 +42,10 @@ body{background:#000;color:white;font-family:Arial, sans-serif;text-align:center
 
 textarea{
   width:92%;
-  max-width:700px;
-  margin:10px auto;
+  max-width:700px;   /* 🔥 gleiche Breite wie Beiträge */
+  margin:10px auto;  /* 🔥 zentriert */
   display:block;
+
   padding:14px;
   border-radius:14px;
   border:none;
@@ -52,7 +53,6 @@ textarea{
   outline:none;
   background:#111;
   color:white;
-  box-sizing:border-box;
 }
 
 #typeButtons button{
@@ -68,7 +68,7 @@ textarea{
 
 #typeButtons button.active{
   opacity:1;
-  box-shadow:0 0 10px currentColor, 0 0 20px currentColor;
+  box-shadow:0 0 10px currentColor,0 0 20px currentColor;
 }
 
 .sendBtn{
@@ -79,8 +79,10 @@ textarea{
   cursor:pointer;
   font-weight:bold;
   font-size:15px;
+
   background:linear-gradient(45deg,#00bfff,#00ffcc);
   color:black;
+
   box-shadow:0 0 10px #00bfff;
   transition:0.2s;
 }
@@ -89,17 +91,18 @@ textarea{
   transform:scale(1.05);
   box-shadow:0 0 20px #00bfff;
 }
+  
 </style>
 </head>
 
 <body>
 
 <div id="login">
-  <img src="logo.png" class="logo" alt="Logo">
+  <img src="logo.png" class="logo">
   <h2>👥 Mitglieder Login</h2>
-  <input id="pw" type="password" placeholder="Code">
+  <input id="pw" placeholder="Code">
   <button onclick="login()">Login</button>
-  <div id="error" style="color:red; margin-top:10px;"></div>
+  <div id="error" style="color:red;"></div>
 </div>
 
 <script>
@@ -113,24 +116,32 @@ const firebaseConfig = {
 firebase.initializeApp(firebaseConfig);
 const db = firebase.database();
 
-let currentPassword = "";
-let all = [];
-let selectedType = "Kritik";
+let currentPassword="";
+let all=[];
+let selectedType="Kritik";
+
+// 🔥 ZEIT FORMAT
+function formatTime(timestamp){
+  if(!timestamp) return "";
+  const d = new Date(timestamp);
+  return d.toLocaleDateString("de-DE") + " | " +
+         d.toLocaleTimeString("de-DE",{hour:"2-digit",minute:"2-digit"});
+}
 
 // Passwort laden
-db.ref("test/settings/memberPassword").on("value", snap => {
-  currentPassword = snap.val() || "";
+db.ref("test/settings/memberPassword").on("value", snap=>{
+  currentPassword=snap.val()||"";
 });
 
 // LOGIN
 function login(){
-  const pw = document.getElementById("pw").value.trim();
+  const pw=document.getElementById("pw").value;
 
-  if(pw === String(currentPassword).trim()){
-    localStorage.setItem("memberLoginTime", Date.now());
+  if(pw===String(currentPassword)){
+    localStorage.setItem("memberLoginTime",Date.now());
     start();
-  } else {
-    document.getElementById("error").innerText = "Falscher Code";
+  }else{
+    document.getElementById("error").innerText="Falscher Code";
   }
 }
 
@@ -139,19 +150,19 @@ if(localStorage.getItem("memberLoginTime")) start();
 
 // START
 function start(){
-  const loginDiv = document.getElementById("login");
-  if(loginDiv) loginDiv.style.display = "none";
+
+  document.getElementById("login").style.display="none";
 
   const memberId = localStorage.getItem("memberId") || Date.now().toString();
   localStorage.setItem("memberId", memberId);
 
-  const ref = db.ref("test/members/" + memberId);
+  const ref = db.ref("test/members/"+memberId);
   ref.set(true);
   ref.onDisconnect().remove();
 
-  document.body.innerHTML = `
-  <img src="logo.png" class="logo" alt="Logo">
-  <h2>👥 Mitglieder Live (<span id="onlineCount">...</span>)</h2>
+  document.body.innerHTML=`
+  <img src="logo.png" class="logo">
+  <h2>👥 Mitglieder Live</h2>
 
   <div class="legend">
     <span class="kritik">■ Kritik</span>
@@ -159,6 +170,8 @@ function start(){
     <span class="frage">■ Frage</span>
     <span class="vorschlag">■ Vorschlag</span>
   </div>
+
+  <div id="online"></div>
 
   <br>
 
@@ -183,12 +196,12 @@ function start(){
   loadOnline();
   loadMessages();
 
-  // KICK CHECK
-  db.ref("test/settings/forceLogoutMembers").on("value", snap => {
+  // 🔥 KICK CHECK
+  db.ref("test/settings/forceLogoutMembers").on("value", snap=>{
     const logoutTime = snap.val();
     const myTime = localStorage.getItem("memberLoginTime");
 
-    if(logoutTime && myTime && Number(logoutTime) > Number(myTime)){
+    if(logoutTime && myTime && logoutTime > myTime){
       alert("Du wurdest gekickt!");
       localStorage.removeItem("memberLoginTime");
       location.reload();
@@ -196,55 +209,60 @@ function start(){
   });
 }
 
-// BUTTON TYP AUSWÄHLEN
+// BUTTON
 function setType(type){
   selectedType = type;
-  document.querySelectorAll("#typeButtons button").forEach(b => {
+
+  document.querySelectorAll("#typeButtons button").forEach(b=>{
     b.classList.remove("active");
   });
+
   event.target.classList.add("active");
 }
 
-// ONLINE ZÄHLER
+// ONLINE
 function loadOnline(){
-  db.ref("test/members").on("value", m => {
-    db.ref("test/admins").on("value", a => {
-      const total = m.numChildren() + a.numChildren();
-      const el = document.getElementById("onlineCount");
-      if(el) {
-        el.innerText = total + " online";
-      }
+  db.ref("test/admins").on("value", a=>{
+    db.ref("test/members").on("value", m=>{
+      document.getElementById("online").innerText =
+        "👑 Vorstand: "+a.numChildren()+" | 👥 Mitglieder: "+m.numChildren();
     });
   });
 }
 
-// ZEIT-FORMATIERUNG
+// LOAD MESSAGES
 function formatTimeAgo(timestamp){
   if(!timestamp) return "";
-  const diff = Math.floor((Date.now() - timestamp) / 1000);
-  if(diff < 60) return "gerade eben";
-  if(diff < 3600){
-    const m = Math.floor(diff / 60);
-    return "vor " + m + " Minute" + (m > 1 ? "n" : "");
-  }
-  if(diff < 86400){
-    const h = Math.floor(diff / 3600);
-    return "vor " + h + " Stunde" + (h > 1 ? "n" : "");
-  }
-  const d = Math.floor(diff / 86400);
-  return "vor " + d + " Tag" + (d > 1 ? "en" : "");
-}
 
-// NACHRICHTEN LADEN
+  const now = Date.now();
+  const diff = Math.floor((now - timestamp)/1000);
+
+  if(diff < 60) return "gerade eben";
+
+  if(diff < 3600){
+    const m = Math.floor(diff/60);
+    return "vor " + m + " Minute" + (m>1?"n":"");
+  }
+
+  if(diff < 86400){
+    const h = Math.floor(diff/3600);
+    return "vor " + h + " Stunde" + (h>1?"n":"");
+  }
+
+  const d = Math.floor(diff/86400);
+  return "vor " + d + " Tag" + (d>1?"en":"");
+}
+  
 function loadMessages(){
-  db.ref("test/feedback").on("child_added", snap => {
-    const msg = { id: snap.key, ...snap.val(), isNew: true };
+  db.ref("test/feedback").on("child_added", snap=>{
+    const msg={id:snap.key,...snap.val(),isNew:true};
     all.push(msg);
-    setTimeout(() => { msg.isNew = false; render(); }, 15000);
+
+    setTimeout(()=>{msg.isNew=false;render();},15000);
     render();
   });
 
-  db.ref("test/feedback").on("child_removed", snap => {
+  db.ref("test/feedback").on("child_removed", snap=>{
     all = all.filter(m => m.id !== snap.key);
     render();
   });
@@ -252,45 +270,46 @@ function loadMessages(){
 
 // RENDER
 function render(){
-  const chat = document.getElementById("chat");
-  if(!chat) return;
-  chat.innerHTML = "";
+  const chat=document.getElementById("chat");
+  chat.innerHTML="";
 
-  all.slice().reverse().forEach(m => {
-    if(!m.text || !m.type) return;
-    const div = document.createElement("div");
-    div.className = "msg " + m.type + (m.isNew ? " blink" : "");
-    div.innerHTML = `
-      <b>${m.type}</b><br>
-      ${m.text}<br>
-      <small style="opacity:0.6;">${formatTimeAgo(m.time)}</small>
-    `;
+  all.slice().reverse().forEach(m=>{
+    const div=document.createElement("div");
+    div.className="msg "+m.type+(m.isNew?" blink":"");
+
+div.innerHTML=`
+  <b>${m.type}</b><br>
+  ${m.text}<br>
+  <small style="opacity:0.6;">${formatTimeAgo(m.time)}</small>
+`;
+
     chat.appendChild(div);
   });
 }
 
-// SENDEN
+// SEND
 function send(){
-  const textEl = document.getElementById("text");
-  const text = textEl.value.trim();
+  const text=document.getElementById("text").value;
   if(!text) return;
 
-  const newMsg = {
-    text,
-    type: selectedType,
-    time: Date.now(),
-    password: currentPassword
-  };
+  const newMsg={
+  text,
+  type:selectedType,
+  time:Date.now(),
+  password: currentPassword
+};
 
   const ref = db.ref("test/feedback").push(newMsg);
 
-  db.ref("test/archive/" + ref.key).set({
+  db.ref("test/archive/"+ref.key).set({
     ...newMsg,
-    status: "aktiv"
+    status:"aktiv"
   });
 
-  textEl.value = "";
+  document.getElementById("text").value="";
 }
 </script>
+
 </body>
 </html>
+
